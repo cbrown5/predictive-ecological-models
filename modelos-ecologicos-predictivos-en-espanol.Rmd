@@ -111,58 +111,57 @@ En este curso, primero preguntaremos si la presencia de reclutas de peces loro d
 
 Los datos y el código para los análisis originales están [disponibles en mi sitio de github](https://github.com/cbrown5/BenthicLatent). En este curso utilizaremos versiones simplificadas de los datos originales. Agradecemos a Rick Hamilton por proporcionar los datos para este curso.
 
-## Planning our project 
+## Planificando nuestro proyecto
 
-An important part of R coding is having an organized workflow. Being organized is important in anything more complex than a one-step R program. Organizing your workflow requires forward planning and sticking to some strategies. In this course we'll follow a simple workflow. 
+Una parte importante de la programación en R es tener un flujo de trabajo organizado. Estar organizado es importante en cualquier cosa más compleja que un programa de R de un solo paso. Organizar tu flujo de trabajo requiere planificación anticipada y adherirse a algunas estrategias. En este curso seguiremos un flujo de trabajo simple.
 
-There are multiple benefits of an organized workflow. You code will be more transparent and repeatable, this will benefit both future you and other researchers. It also means you are less likely to make mistakes and the code is easier to debug when you do. Finally, you may want to share the code publicly so other people can repeat your work. 
+Hay múltiples beneficios de un flujo de trabajo organizado. Tu código será más transparente y repetible, lo que beneficiará tanto a tu futuro yo como a otros investigadores. También significa que es menos probable que cometas errores y el código es más fácil de depurar cuando los haces. Finalmente, es posible que quieras compartir el código públicamente para que otras personas puedan repetir tu trabajo.
 
-First, you'll want to identify your research question. If your question is clear then you can stick to what you need to do, and not end up going down rabbit holes creating code you won't use. Once you have that question I recommmend considering fives steps in your workflow: 
+Primero, querrás identificar tu pregunta de investigación. Si tu pregunta es clara, entonces puedes ceñirte a lo que necesitas hacer, y no terminar yendo por caminos que no llevan a ninguna parte creando código que no usarás. Una vez que tengas esa pregunta, recomiendo considerar cinco pasos en tu flujo de trabajo:
 
-### 1. Gather the data 
+### 1. Recopilar los datos
 
-You will need to source data, often from online data repositories. Even if you have collected species observations yourself, you will likely need to get environmental covariates for prediction from sources such as weather bureaus, oceanographic repositories or climate models. 
+Necesitarás obtener datos, a menudo de repositorios de datos en línea. Incluso si has recopilado observaciones de especies tú mismo, es probable que necesites obtener covariables ambientales para la predicción de fuentes como oficinas meteorológicas, repositorios oceanográficos o modelos climáticos.
 
-### 2. Data wrangling 
+### 2. Manipulación de datos
 
-The data needs to be read into R and 'wrangled' into the appropriate data structure for the modelling packages you will use. Just a warning, some packages require different data structures, so make sure you know what you want! For a spatial model this step can involve a lot of (complex) GIS. Thankfully, R has good packages for GIS. 
+Los datos deben ser leídos en R y 'manipulados' en la estructura de datos apropiada para los paquetes de modelado que utilizarás. Solo una advertencia, algunos paquetes requieren diferentes estructuras de datos, ¡así que asegúrate de saber lo que quieres! Para un modelo espacial, este paso puede involucrar mucho SIG (complejo). Afortunadamente, R tiene buenos paquetes para SIG.
 
-### 3. Dataviz 
+### 3. Visualización de datos
 
-Before starting I always use R's powerful data visualisation tools to explore the data. This gives you a deeper understanding of what you'll model, can help avoid conceptual flaws. Also, you may want to save some data plots for your publication. In this course we'll use R markdown to make a report on our data that can be easily shared with collaborators. 
+Antes de comenzar, siempre uso las poderosas herramientas de visualización de datos de R para explorar los datos. Esto te da una comprensión más profunda de lo que modelarás, puede ayudar a evitar fallas conceptuales. Además, es posible que desees guardar algunos gráficos de datos para tu publicación. En este curso usaremos R markdown para hacer un informe sobre nuestros datos que se pueda compartir fácilmente con colaboradores.
 
-### 4. Modelling  
+### 4. Modelado
 
-Finally, we get to the modelling. This is where we'll spend most time in this course 
+Finalmente, llegamos al modelado. Aquí es donde pasaremos la mayor parte del tiempo en este curso.
 
+### 5. Visualización de modelos
 
-### 5. Modelviz  
+Una forma poderosa de comunicar tus modelos es haciendo más visualizaciones de datos. En este curso usaremos visualizaciones de datos para ver qué dicen los modelos sobre los impulsores ambientales importantes de la abundancia de peces.
 
-A powerful way to communicate your models is by making more dataviz. In this course we'll use dataviz look at what the models say are important environmental drivers of fish abundance. 
+Una nota final, lo anterior puede ser un proceso iterativo. Pero organiza tus scripts de R como se indicó anteriormente y será mucho más fácil.
 
-One final note, the above can be an iterative process. But organize your R scripts like the above and it will be much easier. 
+## Comencemos
 
-## Lets get started 
+Eso es todo el trasfondo, comencemos. Trabajaremos a través de cada paso del flujo de trabajo anterior.
 
-So that's all the background, let's get started. We'll work through each step of the above workflow. 
+# Configurando tu carpeta de proyecto
 
-# Setting up your project folder 
+Inicia Rstudio. Recomiendo configurar cada proyecto como un proyecto de Rstudio. Haz clic en Archivo>Nuevo Proyecto y sigue las indicaciones para crear un nuevo directorio de proyecto. Luego coloca la carpeta de datos en este directorio (y asegúrate de descomprimirla).
 
-Start up Rstudio. I recommend setting up each project as an Rstudio project. Click File>New Project and follow the prompts to create a New project directory. Then drop the data folder into this directory (and make sure you unzip it). 
+También crea subdirectorios para 'imágenes' y 'scripts', aquí es donde guardaremos imágenes y scripts de R respectivamente.
 
-Also create subdirectories for 'images' and 'scripts', this is where we'll save images and R scripts respectively. 
+Para proyectos complejos, querrás crear otras subcarpetas para mantenerte organizado. Por ejemplo, a menudo tengo una carpeta para documentos y una carpeta para salidas de modelos.
 
-For complex projects you'll want to create other subfolders to keep organized. e.g. I often have a folder for documents and a folder for model outputs. 
+Ahora, cada vez que quieras trabajar en este proyecto, haz doble clic en el archivo .Rproj. Abrirá Rstudio en este directorio de trabajo (¡así que nunca necesitarás usar `setwd` de nuevo!).
 
-Now whenever you want to work on this project double click the .Rproj file. It will open Rstudio in this working directory (so you never need use `setwd` again!). 
+Con el proyecto abierto, crea un nuevo script de R (Archivo>Nuevo Archivo>Script de R) y guárdalo en la carpeta de scripts. Ahora escribiremos nuestro código R en este script.
 
-With the project open create a new R script (File>New File>R Script) and save it in the scripts folder. We'll now write our R code in this script.
+Solo verifica que estás en el directorio de trabajo de nivel superior escribiendo `getwd()` en la consola. Si abriste el archivo .RProj, ya estarás allí. Si no, navega allí (por ejemplo, con Sesión>Establecer Directorio de Trabajo).
 
-Just double check your are in the top level working directory by typing `getwd()` into the console. If you opened the .RProj file you will be already there. If you are not, navigate there (e.g. with Session>Set Working Directory). 
+## Ejemplo de estructura de directorio para el proyecto
 
-## Example directory structure for the project
-
-Keeping organized is critical for any complex R project. Here's one example of how I organise my files. 
+Mantenerse organizado es crítico para cualquier proyecto complejo de R. Aquí hay un ejemplo de cómo organizo mis archivos.
 
 ```
 project/
