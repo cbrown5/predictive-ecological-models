@@ -1,18 +1,14 @@
-# Current approaches to species distribution modelling with R
+# Predictive ecological models 
 
-[Chris Brown](https://experts.griffith.edu.au/7867-chris-brown)  
+[Dr. Chris Brown](https://discover.utas.edu.au/C.J.Brown)  
 
-Welcome to our "Current approaches to species distribution modelling with R" R course site. This course was run for the World Fisheries Congress 2021, but all the course materials are freely available. Below are instructions for getting setup or jump straight to the notes and data.
+Welcome to our "Predictive ecological models with R" course site. All the course materials are freely available, including a Spanish translation. Below are instructions for getting setup or jump straight to the notes and data.
 
-Thanks to Dr Christina Buelow for contributing her introduction to simulating data.
+### [Course notes](https://www.seascapemodels.org/predictive-ecological-models/predictive-ecological-models.html)
 
-[Check out the conservation hackers site for upcoming online courses](https://www.conservationhackers.org/courses)
+### [Course notes in Spanish](https://www.seascapemodels.org/predictive-ecological-models/predictive-ecological-models.html)
 
-### [Course notes](http://www.seascapemodels.org/SDM-fish-course-notes/2021-09-20-SDM-fish-course.html)
-
-### [Data for course](https://github.com/cbrown5/SDM-fish-course-notes/raw/main/data.zip)
-
-### [Supplemental introduction to simulating data for power analysis](http://www.seascapemodels.org/SDM-fish-course-notes/Intro-data-simulation_2021-09-17.html)
+### [Data for course](https://github.com/cbrown5/predictive-ecological-models/raw/refs/heads/main/data-cleaned.zip)
 
 ## Setup
 
@@ -23,7 +19,7 @@ Please have R ([install from here](https://cran.r-project.org/)) and [Rstudio](h
 We are using R version >4.0.2 currently for writing this course, so there may be some minor differences if you have a different version. We definitely recommend making sure you have version 4 or greater.
 
 You'll also need to install a few R packages. You can install them with this R code in R's console:
-`install.packages(c("tmap", "tidyverse", "terra", "sf", "nlme", "patchwork", "visreg"))`
+`install.packages(c("tmap", "tidyverse", "corrplot", "sf", "patchwork", "visreg"))`
 If that doesn't work email us with the error and we'll try to help. Otherwise, see your IT department for help.
 
-We're using dplyr version 1.0, which was released earlier this year. If you have an older version of dplyr the course should still work fine, but there may be some minor differences in the code.
+We'll also show some genAI tools for coding, [set-up information is here](https://www.seascapemodels.org/rstats/2025/02/07/setting-up-vscode-r-cline.html)
