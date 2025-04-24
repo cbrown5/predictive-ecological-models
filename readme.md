@@ -6,7 +6,7 @@ Welcome to our "Predictive ecological models with R" course site. All the course
 
 ### [Course notes](https://www.seascapemodels.org/predictive-ecological-models/predictive-ecological-models.html)
 
-### [Course notes in Spanish](https://www.seascapemodels.org/predictive-ecological-models/predictive-ecological-models.html)
+### [Course notes in Spanish](https://www.seascapemodels.org/predictive-ecological-models/modelos-ecologicos-predictivos-en-espanol.html)
 
 ### [Data for course](https://github.com/cbrown5/predictive-ecological-models/raw/refs/heads/main/data-cleaned.zip)
 
