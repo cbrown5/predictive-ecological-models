@@ -1,0 +1,932 @@
+---
+title: "Predictive ecological modelling with R"
+author: "CJ Brown (c.j.brown@utas.edu.au)"
+date: "23 Apr 2025"
+always_allow_html: true
+output:
+  html_document:
+    collapsed: no
+    smooth_scroll: no
+    theme: united
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  word_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+TODO:
+Edit course further, check all details
+Add to github 
+SEnd students new course details. 
+Update data links once online
+
+
+
+([QUICK LINK TO GET THE DATA](https://github.com/cbrown5/SDM-fish-course-notes/raw/main/data.zip))
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+([QUICK LINK TO GET THE DATA](https://github.com/cbrown5/SDM-fish-course-notes/raw/main/data.zip))
+
+Who am I? 
+
+[Chris is a Associate Professor ](https://discover.utas.edu.au/C.J.Brown) at the Institute for Marine and Antarctic Studies, University of Tasmania. Chris and his team in the [Seascapemodels](https://www.seascapemodels.org/) lab work on the conservation of ocean ecosystems and sustainable management of fisheries. His team uses advances in statistical modelling approaches to synthesize ecological data and inform environmental decision making. 
+
+Chris' career was built with R's open-source tools. He is paying forwards that favour by [creating free R resources](https://www.seascapemodels.org/code.html) and teaching workshops far and wide. 
+
+# Introduction
+
+R is the leading programming language for ecological modelling for good reason. Being free and open-source certainly helps. Having strengths in dataviz also helps. And because of these traits, R now has a huge ecosystem of user-contributed packages that enable sophisticated modelling applications. 
+
+This ecosystem of R packages is created by a huge community of R users, many of whom are leaders in their field developing cutting edge statistical models and data science tools. This means if you know R, you can access cutting edge tools and combine them in new ways. 
+
+While there are other languages that excel for scientific computing, R owns the market in statistical ecological modelling, the topic of this course. 
+
+Until quite recently most R users would prepare their data outside of R (e.g. in Arc GIS) and then read it into R for the SDM. But R now also has efficient and user friendly GIS and mapping packages. This means you can create your entire analysis workflow, from data download to visualization, in R. 
+
+But starting an project in R can be daunting for new users. There is a steep learning curve for coding, and there are so many options for packages it is easy to get decision paralysis. 
+
+So in this course we are going to provide an introduction to some common modelling approaches in R. We will also learn how to build an efficient workflow. Our goals today are:
+
+1. Overview R's capability for data analysis, plotting and mapping
+
+2. Learn how to build efficient and repeatable workflows for predictive modelling  
+
+3. Learn how to run some models  
+
+4. Learn how to visualize spatial data and model results   
+
+This course is suitable for people who have some R experience. It is not a beginners course, but users with a little bit of R experience can follow through the first few sections. 
+
+
+## Methods we will cover
+
+In this course we'll overview: 
+
+- Mapping in R with shapefiles and rasters (using the modern packages `sf` and `terra`)
+
+- Generalized linear models 
+
+- Generalized additive models 
+
+## What you'll need 
+
+Make sure you have a recent version of R (available at the CRAN website) and Rstudio installed (free desktop version is fine). 
+
+You will need to install these packages: 
+
+```{r, eval=FALSE}
+install.packages(c("tmap", "tidyverse", 
+                   "sf", "corrplot",
+                   "patchwork", "visreg"))
+
+```
+
+[You will also need to download the data for the course](https://github.com/cbrown5/SDM-fish-course-notes/raw/main/data.zip). 
+
+## Case-study: Bumphead parrotfish, 'Topa' in Solomon Islands
+
+Bumphead parrotfish (*Bolbometopon muricatum*) are an enignmatic tropical fish species. Adults of these species are characterized by a large bump on their forehead that males use to display and fight during breeding. Sex determination for this species is unknown, but it is likely that an individual has the potential to develop into either a male or female at maturity. 
+
+Adults travel in schools and consume algae by biting off chunks of coral and in the process they literally poo out clean sand. Because of their large size, schooling habit and late age at maturity they are susceptible to overfishing, and [many populations are in decline](https://doi.org/10.1007/s00338-019-01801-z). 
+
+Their lifecycle is characterized by migration from lagoonal reef as juveniles (see image below) to reef flat and exposed reef habitats as adults. Early stage juveniles are carnivorous and feed on zooplankton, and then transform into herbivores at a young age. 
+
+![](images/bolbo-lifecycle.PNG)
+
+Image: Lifecycle of bumphead parrotfish. Image by E. Stump and sourced from [Hamilton et al. 2017](http://dx.doi.org/10.1016/j.biocon.2017.04.024). 
+
+Until the mid 2010s the habitat for settling postlarvae and juveniles was a mystery. However, the pattern of migrating from inshore to offshore over their known lifecycle suggests that the earliest benthic lifestages ('recruits') stages may occur on nearshore reef habitats. 
+
+Nearshore reef habitats are susceptible to degradation from poor water quality, raising concerns that this species may also be in decline because of pollution. But the gap in data from the earliest lifestages hinders further exploration of this issue. 
+
+In this course we'll be analyzing the first survey that revealed the habitat preferences of early juveniles stages of bumphead parrotfish. These data were analyzed by [Hamilton et al. 2017](http://dx.doi.org/10.1016/j.biocon.2017.04.024) and [Brown and Hamilton 2018](http://dx.doi.org/10.1111/cobi.13079). 
+
+In the 2010s Rick Hamilton (The Nature Conservancy) lead a series of surveys in the nearshore reef habitats of Kia province, Solomon Islands. The aim was to look for the recruitment habitat for juvenile bumphead parrotfish. These surveys were motivated by concern from local communities in Kia that topa (the local name for bumpheads) are in decline. 
+
+In the surveys, divers swam standardized transects and searched for juvenile bumphead in nearshore habitats, often along the edge of mangroves. All together they surveyed 49 sites across Kia. 
+
+These surveys were made all the more challenging by the occurrence of crocodiles in mangrove habitat in the region. So these data are incredibly valuable. 
+
+Logging in the Kia region has caused [water quality issues that may impact nearshore coral habitats](http://dx.doi.org/10.1111/cobi.13079). During logging, logs are transported from the land onto barges at 'log ponds'. A log pond is an area of mangroves that is bulldozed to enable transfer of logs to barges. As you can imagine, logponds are very muddy. This damage creates significant sediment runoff which can smother and kill coral habitats. 
+
+Rick and the team surveyed reefs near logponds and in areas that had no logging. They only ever found bumphead recruits hiding in branching coral species. 
+
+In this course we will first ask if the occurrence of bumphead recruits is related to the cover of branching coral species. We will then develop an SDM to analyse the relationship between pollution from logponds and bumphead recruits, and use this SDM to predict pollution impacts to bumpheads across the Kia region. 
+
+The data and code for the original analyses are [available at my github site](https://github.com/cbrown5/BenthicLatent). In this course we will use simplified versions of the original data. We're grateful to Rick Hamilton for providing the data for this course. 
+
+## Planning our project 
+
+An important part of R coding is having an organized workflow. Being organized is important in anything more complex than a one-step R program. Organizing your workflow requires forward planning and sticking to some strategies. In this course we'll follow a simple workflow. 
+
+There are multiple benefits of an organized workflow. You code will be more transparent and repeatable, this will benefit both future you and other researchers. It also means you are less likely to make mistakes and the code is easier to debug when you do. Finally, you may want to share the code publicly so other people can repeat your work. 
+
+First, you'll want to identify your research question. If your question is clear then you can stick to what you need to do, and not end up going down rabbit holes creating code you won't use. Once you have that question I recommmend considering fives steps in your workflow: 
+
+### 1. Gather the data 
+
+You will need to source data, often from online data repositories. Even if you have collected species observations yourself, you will likely need to get environmental covariates for prediction from sources such as weather bureaus, oceanographic repositories or climate models. 
+
+### 2. Data wrangling 
+
+The data needs to be read into R and 'wrangled' into the appropriate data structure for the modelling packages you will use. Just a warning, some packages require different data structures, so make sure you know what you want! For a spatial model this step can involve a lot of (complex) GIS. Thankfully, R has good packages for GIS. 
+
+### 3. Dataviz 
+
+Before starting I always use R's powerful data visualisation tools to explore the data. This gives you a deeper understanding of what you'll model, can help avoid conceptual flaws. Also, you may want to save some data plots for your publication. In this course we'll use R markdown to make a report on our data that can be easily shared with collaborators. 
+
+### 4. Modelling  
+
+Finally, we get to the modelling. This is where we'll spend most time in this course 
+
+
+### 5. Modelviz  
+
+A powerful way to communicate your models is by making more dataviz. In this course we'll use dataviz look at what the models say are important environmental drivers of fish abundance. 
+
+One final note, the above can be an iterative process. But organize your R scripts like the above and it will be much easier. 
+
+## Lets get started 
+
+So that's all the background, let's get started. We'll work through each step of the above workflow. 
+
+# Setting up your project folder 
+
+Start up Rstudio. I recommend setting up each project as an Rstudio project. Click File>New Project and follow the prompts to create a New project directory. Then drop the data folder into this directory (and make sure you unzip it). 
+
+Also create subdirectories for 'images' and 'scripts', this is where we'll save images and R scripts respectively. 
+
+For complex projects you'll want to create other subfolders to keep organized. e.g. I often have a folder for documents and a folder for model outputs. 
+
+Now whenever you want to work on this project double click the .Rproj file. It will open Rstudio in this working directory (so you never need use `setwd` again!). 
+
+With the project open create a new R script (File>New File>R Script) and save it in the scripts folder. We'll now write our R code in this script.
+
+Just double check your are in the top level working directory by typing `getwd()` into the console. If you opened the .RProj file you will be already there. If you are not, navigate there (e.g. with Session>Set Working Directory). 
+
+## Example directory structure for the project
+
+project/
+├── data/
+│   ├── raw/                # Raw data files
+│   ├── cleaned/            # Cleaned data files
+│   └── spatial/            # Spatial data files (e.g., shapefiles, rasters)
+├── scripts/
+│   ├── 1_data_wrangling.R  # Script for data wrangling
+│   ├── 2_dataviz.R         # Script for data visualization
+│   ├── 3_modelling.R       # Script for modeling
+│   └── helpers.R           # Helper functions
+├── outputs/
+│   ├── figures/            # Generated figures and plots
+│   ├── models/             # Saved model objects
+│   └── tables/             # Generated tables
+├── images/                 # Images used in the project
+├── docs/                   # Documentation or reports
+│   └── report.Rmd          # R Markdown report
+├── README.md               # Project description and instructions
+└── project.Rproj           # RStudio project file
+
+# 1. Gather the data 
+
+## Where do I get data for models from? 
+
+You should have the data for this course already, if not [download it from github](https://github.com/cbrown5/SDM-fish-course-notes/raw/main/data.zip). 
+
+Data for models can come from many sources. The response variable is of typically species, presence, abundance or biomass. This data may come from your own surveys, those of collaborators, online repositories, government agencies or NGOs. Examples of data sources include fisheries surveys and citizen science programs. 
+
+You'll also want some covariates, which we'll use for predicting the species. These may be included with the data, but are often obtained from other sources. For instance, the ['Australian Ocean Data Network'](https://portal.aodn.org.au/) has a huge amount of different ocean data sources all available to researchers for free. In my state the Queensland government also has repositories of geographic datasets that can be downloaded. Other states and countries have similar services. 
+
+There are specialized R packages for accessing environmental data, such as [rnaturalearth](https://cran.r-project.org/web/packages/rnaturalearth/README.html). The [rLandsat](https://github.com/atlanhq/rLandsat) can directly download landsat data from the USGS and help you process it. 
+
+Other common data sources include [UNEP](https://data.unep-wcmc.org/) and [Exclusive Economic Zones](https://www.marineregions.org/downloads.php). 
+
+If you know the data you want, try websearches 'r landsat' or 'r packages landsat' to see if there is a package available to ease the task fo getting the data in an R friendly format. 
+
+If not try search the data type and 'download' or 'shapefile' (for spatial data). 
+
+Another strategy is to look at peer-reviewed papers doing similar analyses and see what data sources they cite.  
+
+For this course I've already provided you with the data, so let's get started on reading that into R. 
+
+## Load in the data
+
+```{r}
+library(tidyverse)
+dat <- read_csv("data-cleaned/fish-coral-cover-sites.csv")
+
+```
+
+```{r, eval=FALSE}
+dat
+summary(dat)
+```
+
+## Exploring data
+
+I prefer the `ggplot2` package for plotting. It is easy to change how plots look with this package. 
+
+```{r}
+ggplot(dat) + 
+  aes(x = secchi, y = pres.topa) + 
+  geom_point() + 
+  stat_smooth()
+```
+
+This makes a x-y scatter plot. The ggplot(dat) declares the dataframe from which we’ll draw variables and also creates the page for the plot. The aes stands for aesthetics for the plot, here we use it to declare an x axis which is the variable Abundance of topa (`pres.topa`). Then geom_points declares a geometry object which decides how the aesthetics are plotted to the page. 
+
+We've also added a trend line with `stat_smooth()`. 
+
+Let's do a boxplot too: 
+
+```{r}
+ggplot(dat) + 
+  aes(x = logged, y = pres.topa) + 
+  geom_boxplot()
+```
+
+We see that topa are more abundant in unlogged sites.
+
+```{r}
+ggplot(dat) + 
+  aes(x = secchi, y = CB_cover) + 
+  geom_point() + 
+  stat_smooth()
+```
+
+```{r}
+dat <- dat |>
+  mutate(CB_cover_percent = 100*CB_cover/n_pts)
+```
+This code is creating a new column `CB_cover_percent` in the `dat` dataframe. The pipe operator `%>%` is used to pass the `dat` dataframe to the `mutate` function, which adds a new column to the dataframe. The new column is calculated as `100 * CB_cover / n_pts`, which converts the coral cover to a percentage.
+
+```{r}
+ggplot(dat) + 
+  aes(x = secchi, y = CB_cover_percent) + 
+  geom_point() + 
+  stat_smooth()
+
+```
+
+```{r}
+ggplot(dat) + 
+  aes(x = dist_to_logging_km, y = CB_cover_percent) + 
+  geom_point() + 
+  stat_smooth()
+```
+
+## Exploring correlations in the data 
+
+```{r eval=FALSE}
+icol <- sapply(dat, is.numeric)
+pairs(dat[,icol])
+round(cor(dat[,icol]),2)
+```
+
+Which could also be summarized as a `corrplot`:
+
+```{r}
+icol <- sapply(dat, is.numeric)
+library(corrplot)
+corrplot(cor(dat[,icol]))
+```
+
+
+# 2. Dataviz 
+
+I would make this in a new  script and call it something like `2_dataviz.R`, so the order of scripts is clear. 
+
+```{r}
+library(tidyverse)
+dat <- read_csv("data-cleaned/fish-coral-cover-sites.csv")
+```
+
+
+As you'll see we've already done a lot of dataviz, but now we'll make finished products for using in a report or publication. 
+
+### Combining multiple plots 
+
+patchwork is a fun way to do this task
+
+```{r}
+library(patchwork)
+```
+
+First we save each ggplot as an object, that can be printed on demand: 
+
+
+```{r}
+g1 <- ggplot(dat) + 
+  aes(x = dist_to_logging_km, y = secchi) + 
+  geom_point() + 
+  stat_smooth() +
+  xlab("Distance to log ponds (km)") +
+  ylab("Secchi depth (m)")  +
+  theme_classic()
+g1
+```
+
+This code sets the default theme for all subsequent plots to `theme_classic()`, which is a clean and simple theme.
+
+```{r}
+theme_set(theme_classic())
+```
+
+```{r}
+g2 <- ggplot(dat) + 
+  aes(x = dist_to_logging_km, y = CB_cover) + 
+  geom_point() +
+  stat_smooth() + 
+  xlab("Distance to log ponds (m)") +
+  ylab("Coral cover (%)")
+
+g3 <- ggplot(dat) + 
+  aes(x = CB_cover, y = pres.topa) + 
+  geom_point() + 
+    stat_smooth() + 
+  xlab("Coral cover (%)") +
+  ylab("Topa abundance")
+    
+
+```
+
+Now use `+`, `/` and `()` to arrange your plots into a patchwork: 
+
+```{r}
+gall <- g1 + g2 + g3
+gall
+``` 
+
+This code arranges the plots in a single row with the specified widths and adds labels to each plot.
+
+```{r}
+gall <- g1 + g2 + g3 + 
+  plot_layout(nrow = 1, widths = c(1, 0.5, 0.5)) + 
+  plot_annotation(tag_levels = "A")
+gall
+```
+
+Finally, you can save the image: 
+
+```{r eval=FALSE}
+ggsave("outputs/plot1.png", gall, width = 8, height = 3)
+```
+
+# 3. Spatial data and making maps
+
+## The sf package
+
+The `sf` package is used for handling spatial data in R. It provides a simple and consistent interface for working with spatial data, including reading, writing, and manipulating spatial objects.
+
+We've picked the column `"pres.topa"` for the colour scale. 
+
+```{r}
+library(tmap)
+library(sf)
+```
+
+
+
+```{r}
+#Read land from a geopackage
+land <- st_read("data-cleaned/land.gpkg")
+#Read logponds from a geopackage
+logponds <- st_read("data-cleaned/logponds.gpkg")
+#Read sdat from a geopackage
+sdat <- st_read("data-cleaned/spatial-fish-coral-cover-sites.gpkg")
+```
+
+The `sf` package provides a simple and consistent interface for handling spatial data in R. It allows you to read, write, and manipulate spatial objects, making it easier to work with spatial data in your analyses.
+
+## The tmap package
+
+I like to use `tmap` for maps. 
+
+`tmap` works much like `ggplot2` in that we build and add on layers. In this case we have just one layer, from `sdat2`. We declare the layer with `tm_shape()` (in this case `sdat2`), then the plot type with the following command. 
+
+Here we are using `tm_symbols` to plot dots of the coordinates. Other options are `tm_polygons`, `tm_dots` and many others we'll see later.  
+
+## Load our spatial data 
+
+
+```{r}
+library(tmap)
+tm_shape(sdat) + 
+  tm_symbols(col = "pres.topa", size = 0.2)
+```
+
+We can also save tmap layers, e.g. the layer for land will come in handy later: 
+
+```{r}
+tland <- tm_shape(land) + 
+  tm_fill()
+```
+
+Now we can layer land and the survey sites: 
+
+```{r}
+my_map <- tland + 
+  tm_shape(sdat) + 
+  tm_symbols(col = "pres.topa", size = 0.2) +
+  tm_scale_bar(position = c("right", "top"))
+  my_map
+```
+(Read more about tmap in the package vignettes](https://cran.r-project.org/web/packages/tmap/vignettes/tmap-getstarted.html). 
+
+Try make a map of one of the other variables like `secchi` or `CB_cover`. 
+
+To change the map colour scale, you can use the `tm_symbols` function with the `palette` argument. For example:
+
+```{r}
+tm_shape(sdat) + 
+  tm_symbols(col = "secchi", size = 0.2, palette = "Blues")
+```
+
+To explore colour palette options:
+
+```{r eval=FALSE}
+tmaptools::palette_explorer()
+```
+
+
+```{r}
+tmap_save(my_map, filename = "outputs/map-pres-topa.png", width = 8, height = 6)
+```
+
+# 4. Predictive modelling  
+
+You might like to start another script here and call it `3_modelling.R`. 
+
+## Choosing a model  
+
+Ecological modelling is a huge research field and there are many options for choosing a model. I classify predictive models into two types: model based approaches and machine learning (algorithm) based approaches. In this course we'll look at model based approaches, but first a brief overview. 
+
+### Machine learning (algorithm) based approaches
+
+These approaches gained popularity in the 00s with algorithms such as boosted regression trees (check out Jane Elith's papers) and maxent. They are very flexible in terms of data they can fit, and can have excellent predictive power. But on the downside they 'black boxes' and it can be hard for humans to interpret why they make good predictions.
+
+### Model based approaches
+
+Model based approaches fit models to data. I prefer to use model-based approaches because they let me interpret the results (e.g. how does a species respond to increasing temperature?). Model approaches also are better at estimating and representing uncertainty bounds than machine learning approaches. Finally, model based approaches let us deal directly with spatial autocorrelation. Dealing with spatial autocorrelation is essential for most spatial ecological datasets. 
+
+Another issue that commonly arises (that I won't deal with here) is imperfect detection of species. Model based approaches can handle this. 
+
+### Hybrid approaches 
+
+There's always a grey area to any dichotomy. More recent predictive model developments are utilizing neural network (machine learning) to fit complex multispecies and process-based models. 
+
+Check out the R package [`mistnet`](https://rdrr.io/github/davharris/mistnet2/man/mistnet.html) for one example. Another interesting development is Joseph's ['neural hierarchical models'](https://mbjoseph.github.io/posts/2020-01-13-neural-hierarchical-models/) (implemented in the python language) which apply machine learning to train process models of multi-species communities. 
+
+### Comparison of some different predictive model options 
+
+```{r echo = FALSE}
+datmodels <- read_csv("model-types.csv")
+knitr::kable(datmodels)
+```
+
+*Note that point process models are [mathematically equivalent to maxent](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2012.01824.x) and can be implemented with many packages, e.g. [INLA pkg's SPDE approach](https://becarioprecario.bitbucket.io/spde-gitbook/ch-lcox.html)
+
+### Some examples 
+
+[In a study](https://onlinelibrary.wiley.com/doi/abs/10.1111/gcb.15472) I wanted to know how fish catch related to fish abundance and environmental variables, notably temperature. This was a spatial and temporal model of fish catch. I developed a Bayesian hierarchical model with the [`brms` pkg](https://cran.r-project.org/web/packages/brms/index.html). brms let me develop a bespoke model of catch as it related to inwater fish biomass and heatwaves. 
+
+Importantly, I could also model for uncertainty in the predictor variable of fish biomass (something non-Bayesian models have a hard time doing). The results suggested that coral trout were easier to catch during a heatwave. 
+
+Tuna longline fisheries can have high bycatch of threatened species, like turtles and sharks. Understanding how bycatch relates to environmental variables, but also target fish species can help us design more effective regulations for avoiding bycatch. [We used multispecies distribution models ](https://doi.org/10.1016/j.marpol.2021.104664) (AKA joint models) to study catch of target tuna and bycatch in several longline fisheries. Models were implemented [with boral pkg in R](https://cran.r-project.org/web/packages/boral/boral.pdf). 
+
+The results revealed clusters of bycatch that were associated with certain fishing practices and targeting of certain tuna species (notably yellowfin over bigeye). 
+
+![](images/tuna-model.png)
+Image: Ordination of catch and bycatch in the longline sets from Palau longline tuna fishery. The ordination was made from a joint model 'boral' ([Brown et al. 2021](https://doi.org/10.1016/j.marpol.2021.104664))
+
+Finally, [for our analysis of bumphead parrotfish](http://dx.doi.org/10.1016/j.biocon.2017.04.024) I used path analysis. This can be done with the [piecewiseSEM](https://cran.r-project.org/web/packages/piecewiseSEM/index.html) package. Path analysis is great for inference on causes of change (but not so powerful for prediction in my experience). The path analysis suggested that bumphead were in decline both from loss of habitat, but also direct effects of water quality on the fish themselves. 
+
+### How to decide what model to use? 
+
+Here are some good questions to ask
+
+- Am I most interested in inference?  
+If yes avoid machine learning approaches 
+
+- Am I most interested in making the most accurate predictions, especially to new locations?
+If yes, machine learning approaches are often better.
+
+- Is it important to represent uncertainty in outputs? 
+If yes avoid machine learning approaches and preference Bayesian approaches
+
+- Is spatial AC a problem? 
+Answer is almost certainty yes, see table above for options. 
+
+- Are there non-linear relationships? (probably yes)
+Answer is almost certainty yes, use more flexible approaches like machine learning or GAMs (and Bayesian approaches). 
+
+- Do I want to implement bespoke model formulas?  
+If yes, use Bayesian approaches 
+
+- How long can I wait for a model computations ? 
+If its <1 minute then avoid Bayesian approaches (or use INLA, which is very fast)
+
+- What is my technical capability? 
+If your just starting out use GLMs or GAMs. If you want to go Bayesian, an easy start is brms or hmsc for multispecies models 
+
+## Preparation of covariates 
+
+So now we've covered some modelling options, let's do some modelling. 
+
+We are going to start with simpler models and work our way through. In a real workflow you might do things differently. For a complex analysis its good to start simple. Whereas for a straightforward GLM you might start with the most complex model including all covariates and work your way backwards to simplifying it. 
+
+First up we'll make percent cover variables 
+
+```{r}
+sdat <- sdat |>
+  mutate(CB_cover_percent = 100*CB_cover/n_pts,
+         soft_cover_percent = 100*soft_cover/n_pts)
+```
+
+### Generalized linear model
+
+[If you need to quickly learn the basics of GLMs start here](https://www.seascapemodels.org/rstats/2018/01/19/intro-to-glms.html) then [read this article on link functions](https://www.seascapemodels.org/rstats/2018/10/16/understanding-the-glm-link.html)
+
+### Introduction to GLM families
+
+Generalized Linear Models (GLMs) are a flexible generalization of ordinary linear regression that allows for response variables that have error distribution models other than a normal distribution. The different families of GLMs include:
+
+- Gaussian: Used for continuous response variables with a normal distribution.
+- Poisson: Used for count data with a Poisson distribution.
+- Negative Binomial: Used for overdispersed count data.
+- Binomial: Used for binary response variables.
+
+
+```{r}
+gaussian_data <- rnorm(n, mean = 5, sd = 1)
+n_data <- rpois(n, lambda = 5)
+library(visreg)<- rnbinom(n, size = 2, mu = 5)  # overdispersed compared to Poisson
+```omial_data <- rbinom(n, size = 1, prob = 0.3)
+
+Let's do a normal (gaussian) GLM. We'll use the `flow` variable too, its an indicator of whether the site had strong or mild current flows. Sites with strong flows should have better water quality.  
+dist_data <- data.frame(
+```{r}sian = gaussian_data,
+glm1_gaus <- glm(pres.topa ~ CB_cover_percent + flow, data = sdat)
+par(mfrow = c(2,2))l` = neg_binom_data,
+plot(glm1_gaus)nomial_data
+```
+
+Looks like normal distribution isn't appropriate (what did I say!). Poisson distribution is often good for counts: 
+library(tidyr)
+```{r}ata <- pivot_longer(dist_data, 
+glm1_pois <- glm(pres.topa ~ CB_cover_percent + flow, data = sdat,
+          family = "poisson")es_to = "Distribution", 
+par(mfrow = c(2,2))       values_to = "Value")
+plot(glm1_pois)
+```reate histograms
+ggplot(long_data, aes(x = Value)) +
+Still not great, what about the negative binomial, for overdispersed counts: 
+  facet_wrap(~ Distribution, scales = "free") +
+```{r}e_classic() +
+library(MASS)= "Examples of Different Distribution Families",
+glm1_nb <- glm.nb(pres.topa ~ CB_cover_percent + flow, data = sdat)
+par(mfrow = c(2,2))cy") +
+plot(glm1_nb)d.position = "none")
+```
+Getting better. tatistics
+dist_summary <- data.frame(
+We can compare them with the AIC: isson", "Negative Binomial", "Binomial"),
+  Mean = c(mean(gaussian_data), mean(poisson_data), 
+```{r}     mean(neg_binom_data), mean(binomial_data)),
+AIC(glm1_gaus, glm1_pois, glm1_nb) var(poisson_data), 
+```            var(neg_binom_data), var(binomial_data)),
+  `Mean/Variance Ratio` = c(mean(gaussian_data)/var(gaussian_data), 
+[You might like to read this intro to the AIC](https://www.seascapemodels.org/rstats/2018/04/13/how-to-use-the-AIC.html). 
+                            mean(neg_binom_data)/var(neg_binom_data), 
+Let's check out the model resultsbinomial_data)/var(binomial_data))
+)
+```{r}:kable(dist_summary, digits = 3)
+summary(glm1_nb)
+```
+Note the key characteristics of each distribution:
+# 5. Multiple covariates ymmetric, mean ≈ variance (scaled by σ²)
+- Poisson: Count data, mean = variance
+Let's compare the effects of CB_cover and soft_cover on topa. We won't include distance to logging because it is a cause of coral cover, not a direct effect on topa. We also need to standardize CB_cover and soft_cover by n_pts.
+- Binomial: Binary outcomes (0/1), useful for presence/absence data
+```{r}
+### GLM for topa 
+glm2_nb <- glm.nb(pres.topa ~ CB_cover_percent + soft_cover_percent + flow, data = sdat)
+summary(glm2_nb) a GLM. `visreg` is a great package for visualising
+
+# Compare models with AIC```{r}
+AIC(glm1_nb, glm2_nb)
+```
+# Calculate delta AIC
+aic_values <- AIC(glm1_nb, glm2_nb)Let's do a normal (gaussian) GLM. We'll use the `flow` variable too, its an indicator of whether the site had strong or mild current flows. Sites with strong flows should have better water quality.  
+aic_values$deltaAIC <- aic_values$AIC - min(aic_values$AIC)
+aic_values$weight <- exp(-0.5 * aic_values$deltaAIC) / sum(exp(-0.5 * aic_values$deltaAIC))```{r}
+knitr::kable(aic_values, digits = 3)CB_cover_percent + flow, data = sdat)
+par(mfrow = c(2,2))
+# Interpret the AIC comparisonlm1_gaus)
+if (aic_values$deltaAIC[2] < 2) {
+  cat("The AIC difference is less than 2, suggesting both models have substantial support.\n")
+} else if (aic_values$deltaAIC[2] < 7) {tribution is often good for counts: 
+  cat("The AIC difference is between 2 and 7, suggesting the model with lower AIC has considerably more support.\n")
+} else {
+  cat("The AIC difference is greater than 7, suggesting the model with lower AIC has substantially more support.\n")1_pois <- glm(pres.topa ~ CB_cover_percent + flow, data = sdat,
+}          family = "poisson")
+
+# Visual comparison of model predictionsplot(glm1_pois)
+pred_data <- data.frame(
+  CB_cover_percent = seq(min(sdat$CB_cover_percent), max(sdat$CB_cover_percent), length.out = 100),
+  soft_cover_percent = mean(sdat$soft_cover_percent),Still not great, what about the negative binomial, for overdispersed counts: 
+  flow = "Mild"  # Most common category as reference
+)
+
+# Predictions from both models~ CB_cover_percent + flow, data = sdat)
+pred_data$pred_glm1 <- predict(glm1_nb, newdata = pred_data, type = "response")
+pred_data$pred_glm2 <- predict(glm2_nb, newdata = pred_data, type = "response")
+
+# Plot predictions from both modelsGetting better. 
+ggplot(pred_data, aes(x = CB_cover_percent)) +
+  geom_line(aes(y = pred_glm1, color = "Model 1: CB_cover + flow")) +We can compare them with the AIC: 
+  geom_line(aes(y = pred_glm2, color = "Model 2: CB_cover + soft_cover + flow")) +
+  labs(x = "Branching coral cover (%)", ```{r}
+       y = "Predicted topa abundance",
+       color = "Model") +```
+  theme_classic() +
+  theme(legend.position = "bottom") to read this intro to the AIC](https://www.seascapemodels.org/rstats/2018/04/13/how-to-use-the-AIC.html). 
+```
+'s check out the model results
+# 6. Generalized additive models 
+
+Generalized Additive Models (GAMs) are a flexible extension of GLMs that allow for non-linear relationships between the response and predictor variables. They are particularly useful when you expect non-linear relationships in your data.summary(glm1_nb)
+
+Let's fit a GAM for CB_cover:
+
+
+# 5. Multiple covariates 
+```{r}
+dev.off()Let's compare the effects of CB_cover and soft_cover on topa. We won't include distance to logging because it is a cause of coral cover, not a direct effect on topa. We also need to standardize CB_cover and soft_cover by n_pts.
+library(mgcv)
+gam1 <- gam(pres.topa ~ s(CB_cover_percent) + flow, family = "nb", data = sdat)```{r}
+summary(gam1)
+plot(gam1)glm2_nb <- glm.nb(pres.topa ~ CB_cover_percent + soft_cover_percent + flow, data = sdat)
+```
+```
+My personal favourite. So flexible, so fast, very convenient. 
+TODO: copilot add AIC comparsions 
+You can't go past [Generalized Additive Models
+An Introduction with R, Second Edition](https://www.routledge.com/Generalized-Additive-Models-An-Introduction-with-R-Second-Edition/Wood/p/book/9781498728331) if you need to learn about these models. 
+
+```{r} a flexible extension of GLMs that allow for non-linear relationships between the response and predictor variables. They are particularly useful when you expect non-linear relationships in your data.
+library(mgcv)
+m1_gam <- gam(pres.topa ~ s(CB_cover_percent) + flow,t's fit a GAM for CB_cover:
+              family = "nb",
+              data = sdat)
+visreg(m1_gam)dev.off()
+```
+gam1 <- gam(pres.topa ~ s(CB_cover_percent) + flow, family = "nb", data = sdat)
+(`gam.check(m1_gam)` is a good idea to check resids too). y(gam1)
+
+#### The predictions
+
+Now we have an ok model, what does it say about about the effects of pollution on topa... We'll use `visreg` a versitile package that works with many modelling packages: My personal favourite. So flexible, so fast, very convenient. 
+
+```{r}ditive Models
+library(visreg)ith R, Second Edition](https://www.routledge.com/Generalized-Additive-Models-An-Introduction-with-R-Second-Edition/Wood/p/book/9781498728331) if you need to learn about these models. 
+visreg(glm1_nb)
+```
+
+Logging is bad news for our baby fish. m1_gam <- gam(pres.topa ~ s(CB_cover_percent) + flow,
+y = "nb",
+Note the partial effects of each covariate (ie effect of that covariate while holding other covars constant, plotted on y-axis) are on log scale, because of the log link. Use `visreg(m1, scale = "response")` to see results in counts of fish. 
+
+```
+# 7. Modelviz  
+am.check(m1_gam)` is a good idea to check resids too). 
+Finally the fun part. Let's make some plots of what our model says about where the fish are going to be. We'll use `m1_gam` for this task. If you wanted to be thorough you could compare predictions from the different models to see if they concur. 
+
+If your model fitting is complex, or takes a long time, you may want to save the results above and start a new script here. We'll just continue for now. 
+ model, what does it say about about the effects of pollution on topa... We'll use `visreg` a versitile package that works with many modelling packages: 
+## Plotting marginal effects 
+
+We can make posh visreg plots with a few extra commands: 
+visreg(glm1_nb)
+```{r}
+g1 <- visreg(m1_gam, xvar = "CB_cover_percent",
+       scale = "response", gg = TRUE) + our baby fish. 
+  xlab("Branching coral cover (%)") + 
+  ylab("Topa abundance")Note the partial effects of each covariate (ie effect of that covariate while holding other covars constant, plotted on y-axis) are on log scale, because of the log link. Use `visreg(m1, scale = "response")` to see results in counts of fish. 
+g1
+```
+It shows mean plus 95% CIs. # 7. Modelviz  
+
+Let's use our patchwork skills to make this fancy pub quality plot of both logging and flow effects: Finally the fun part. Let's make some plots of what our model says about where the fish are going to be. We'll use `m1_gam` for this task. If you wanted to be thorough you could compare predictions from the different models to see if they concur. 
+
+```{r}If your model fitting is complex, or takes a long time, you may want to save the results above and start a new script here. We'll just continue for now. 
+library(patchwork)
+flow_pred <- visreg(m1_gam, xvar = "flow",## Plotting marginal effects 
+       scale = "response", gg = TRUE, plot = FALSE)
+We can make posh visreg plots with a few extra commands: 
+g2 <- ggplot(flow_pred$fit) + 
+  aes(x = flow, y = visregFit) + ```{r}
+  geom_point() + 
+  geom_linerange(aes(ymin = visregLwr, ymax = visregUpr)) +        scale = "response", gg = TRUE) + 
+  xlab("Flow") + 
+  ylab("Topa abundance")  ylab("Topa abundance")
+
+gboth <- g1 + g2 + ```
+  plot_layout(nrow = 1, widths = c(1, 0.5)) + 
+  plot_annotation(tag_levels = "A")
+
+gboth
+``````{r}
+
+Don't forget to save it? flow_pred <- visreg(m1_gam, xvar = "flow",
+= TRUE, plot = FALSE)
+```{r eval=FALSE}
+ggsave("images/m1_gam_predictions.png", plot = gboth,
+       width = 6,   aes(x = flow, y = visregFit) + 
+       height = 3)
+
+```  xlab("Flow") + 
+
+# 8. Getting help with R
+<- g1 + g2 + 
+.5)) + 
+## R books and web material   plot_annotation(tag_levels = "A")
+There are plenty of good books out there (too many to choose from in fact). For the content we covered today, some good resources are: 
+
+- [R for Data Science](https://r4ds.had.co.nz/), for data wrangling mainly 
+
+- [R Graphics Cookbook](http://www.cookbook-r.com/Graphs/), for ggplot and free on the web
+
+- [Geocomputation in R](https://geocompr.robinlovelace.net/), free on the web
+ggsave("images/m1_gam_predictions.png", plot = gboth,
+- If you want to learn new tricks, or stay up-to-date with the latest packages, the blog aggregator [R-Bloggers](https://www.r-bloggers.com/) has a non-stop feed of R blogs from all over the world and all disciplines, including [Chris' blog](http://www.seascapemodels.org/bluecology_blog.html) width = 6, 
+
+If you prefer to have a printed guide, another tactic is to web search your favourite package and 'cheatsheet'. 
+
+## Resources for species distribution modelling 
+. Getting help with R
+- Chris often refers to [Mixed Effects Models and Extensions in Ecology with R](https://www.springer.com/gp/book/9780387874579). Great examples to help you get started in modelling too
+
+- The classic text for GAMs is [Generalized Additive Models: An Introduction with R](https://www.routledge.com/Generalized-Additive-Models-An-Introduction-with-R-Second-Edition/Wood/p/book/9781498728331). This has a very technical treatment of GAMs, but also an extensive section with practical examples, including spatial ones. ## R books and web material 
+are plenty of good books out there (too many to choose from in fact). For the content we covered today, some good resources are: 
+- Here's an [intro to some machine learning models](https://rspatial.org/raster/sdm/index.html)
+had.co.nz/), for data wrangling mainly 
+- Site for [Multispecies distribution modelling with HMSC](https://www2.helsinki.fi/en/researchgroups/statistical-ecology/hmsc).
+ookbook](http://www.cookbook-r.com/Graphs/), for ggplot and free on the web
+
+# 9. Bonus material Geocomputation in R](https://geocompr.robinlovelace.net/), free on the web
+
+#### Spatial autocorrelation  - If you want to learn new tricks, or stay up-to-date with the latest packages, the blog aggregator [R-Bloggers](https://www.r-bloggers.com/) has a non-stop feed of R blogs from all over the world and all disciplines, including [Chris' blog](http://www.seascapemodels.org/bluecology_blog.html)
+
+Spatial AC means data from nearby places are more similar (or more different) than data from places that are distant to each other. ie data are +ve or -ve correlated based on their distance apart. If you prefer to have a printed guide, another tactic is to web search your favourite package and 'cheatsheet'. 
+
+[As explained in this classic study, spatial AC can be **endogenous** or **exogenous**.](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1466-8238.2006.00279.x). 
+An example of endogenous AC is that caused by species dispersal dynamics.  An example of exogenous AC is that caused by environmental drivers that we haven't modelled. 
+ers to [Mixed Effects Models and Extensions in Ecology with R](https://www.springer.com/gp/book/9780387874579). Great examples to help you get started in modelling too
+We are only concerned about AC in the residuals, not AC in the data. Let's visualize that. 
+d Additive Models: An Introduction with R](https://www.routledge.com/Generalized-Additive-Models-An-Introduction-with-R-Second-Edition/Wood/p/book/9781498728331). This has a very technical treatment of GAMs, but also an extensive section with practical examples, including spatial ones. 
+```{r}
+sdat$resid_glm_pois <- resid(glm1_pois)ps://rspatial.org/raster/sdm/index.html)
+
+tland + ogy/hmsc).
+  tm_shape(sdat) + 
+  tm_symbols(col = "resid_glm_pois", size = 0.5)
+```onus material 
+Hmmm, certaintly some clustering in residuals. Let's check out the semivariance function. I've written a script for computing this, based on the equation in a classic book, [Legendre and Legendre Numerical Ecology](https://www.elsevier.com/books/numerical-ecology/legendre/978-0-444-53868-0). 
+
+We load the script, then we need to calculate the distance between every site pair, before we can estimate the semivariance: 
+tial AC means data from nearby places are more similar (or more different) than data from places that are distant to each other. ie data are +ve or -ve correlated based on their distance apart. 
+```{r}
+source("data/semivariance.R")plained in this classic study, spatial AC can be **endogenous** or **exogenous**.](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1466-8238.2006.00279.x). 
+site_distmat <- st_distance(sdat)/1000 species dispersal dynamics.  An example of exogenous AC is that caused by environmental drivers that we haven't modelled. 
+dim(site_distmat)
+glm1_pois_semivar <- semivariance(site_distmat, sdat$resid_glm_pois, ncats = 15)t AC in the residuals, not AC in the data. Let's visualize that. 
+```
+{r}
+The semivariance is a measure of the (weighted) pairwise deviations between residual values at different distances from each other. Low åand increasing semivariance means high correlations between sites that are nearby that weaken with distance. So in this plot we are looking for an increasing trend that flattens out (at what's called the 'sill'): sdat$resid_glm_pois <- resid(glm1_pois)
+
+```{r}
+ggplot(glm1_pois_semivar) +   tm_shape(sdat) + 
+  aes(x = distances, y = semivar) + _glm_pois", size = 0.5)
+  geom_point() + 
+  stat_smooth()Hmmm, certaintly some clustering in residuals. Let's check out the semivariance function. I've written a script for computing this, based on the equation in a classic book, [Legendre and Legendre Numerical Ecology](https://www.elsevier.com/books/numerical-ecology/legendre/978-0-444-53868-0). 
+
+```tween every site pair, before we can estimate the semivariance: 
+There's a slight increasing trend here, suggesting some AC at shorter distances. 
+
+I put these two plots (the map and the semivar) into another function, because we will make the a  'ot. Let's see it for the NB model: 
+000
+```{r}
+glm_nb_plots <- plot_spatial_AC(sdat, glm1_nb, site_distmat)ariance(site_distmat, sdat$resid_glm_pois, ncats = 15)
+tland + glm_nb_plots[[1]]
+glm_nb_plots[[2]]
+``` semivariance is a measure of the (weighted) pairwise deviations between residual values at different distances from each other. Low åand increasing semivariance means high correlations between sites that are nearby that weaken with distance. So in this plot we are looking for an increasing trend that flattens out (at what's called the 'sill'): 
+Looks similar, so we still have a problem 
+
+#### Generalized additive model with spatial covariatesggplot(glm1_pois_semivar) + 
+
+We can repeat above model, but with just a Gaussian Process spline. This is akin to krigging (spatial interpolation):   geom_point() + 
+_smooth()
+First we need to get the coordinates of the survey sites.
+```{r}
+sdat <- sdat |>shorter distances. 
+  mutate(x = st_coordinates(sdat)[,1],
+         y = st_coordinates(sdat)[,2])odel: 
+```
+```{r}
+```{r}glm_nb_plots <- plot_spatial_AC(sdat, glm1_nb, site_distmat)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Well the GP is a very flexible model, and it can fit the topa data very well. So it does, and coral cover is no longer important.High values imply confounded splines... What's going on here? ```corrplot(concurvity(m3_gam, full = FALSE)$estimate)```{r}Let's check the concurvity (GAM equivalent of confounding): Coral cover is no longer an important explanatory variable! What happened here? ```plot(m3_gam)              data = sdat)              family = "poisson",                s(x, y, bs = "gp"),m3_gam <- gam(pres.topa ~ s(CB_cover_percent) + ```{r}What happens if we include the GP and the logging covariate? ```m2_gam_plots[[2]]tland + m2_gam_plots[[1]]m2_gam_plots <- plot_spatial_AC(sdat, m2_gam, site_distmat)```{r}```plot(m2_gam, se = FALSE)              data = sdat)              family = "nb",m2_gam <- gam(pres.topa ~ s(x, y, bs = "gp"),tland + glm_nb_plots[[1]]
+glm_nb_plots[[2]]
+```
+Looks similar, so we still have a problem 
+
+#### Generalized additive model with spatial covariates
+
+We can repeat above model, but with just a Gaussian Process spline. This is akin to krigging (spatial interpolation): 
+
+First we need to get the coordinates of the survey sites.
+```{r}
+sdat <- sdat |>
+  mutate(x = st_coordinates(sdat)[,1],
+         y = st_coordinates(sdat)[,2])
+```
+
+```{r}
+m2_gam <- gam(pres.topa ~ s(x, y, bs = "gp"),
+              family = "nb",
+              data = sdat)
+plot(m2_gam, se = FALSE)
+```
+
+```{r}
+m2_gam_plots <- plot_spatial_AC(sdat, m2_gam, site_distmat)
+
+tland + m2_gam_plots[[1]]
+m2_gam_plots[[2]]
+
+```
+What happens if we include the GP and the logging covariate? 
+
+```{r}
+m3_gam <- gam(pres.topa ~ s(CB_cover_percent) + 
+                s(x, y, bs = "gp"),
+              family = "poisson",
+              data = sdat)
+plot(m3_gam)
+
+```
+
+Coral cover is no longer an important explanatory variable! What happened here? 
+
+Let's check the concurvity (GAM equivalent of confounding): 
+
+```{r}
+corrplot(concurvity(m3_gam, full = FALSE)$estimate)
+```
+High values imply confounded splines... What's going on here? 
+
+Well the GP is a very flexible model, and it can fit the topa data very well. So it does, and coral cover is no longer important.
+
+
