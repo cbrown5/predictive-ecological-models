@@ -208,6 +208,13 @@ Another strategy is to look at peer-reviewed papers doing similar analyses and s
 
 For this course I've already provided you with the data, so let's get started on reading that into R. 
 
+## Setup for optimal use of github copilot
+
+Create a readme.md file
+Document project aims, R package preferences, suggesetd analyses, data paths and meta-data in your readme.
+Use copilot in 'ask' mode if you need help planning. 
+Once you have a complete plan you can use copilot in 'agent' mode to run the analysis
+
 ## Load in the data
 
 ```{r}
@@ -273,6 +280,27 @@ ggplot(dat) +
   geom_point() + 
   stat_smooth()
 ```
+
+## Exploring data with copilot 
+
+See above steps about readme.md file. It is important copilot has this context. 
+
+1. Open copilot in 'code' or 'agent' mode. 
+2. Create a blank script that has your data paths in it OR attach your comprehensive readme file
+3. Ask copilot to create and save the `head()` of the data. 
+4. Start a new script e.g. `1_data_viz.R` 
+5. Open 'agent' or 'code' mode. Attach the data head. 
+6. Ask copilot to create the plots you want. 
+
+Tips:
+
+Attaching a head of the data helps copilot understand the data structure and types of data. Studies have found this gives the best results for R. 
+
+You can attach all the data, but this can be slow, wastes tokens (so the rest of your conversation will need to be shorter) and also won't work for large datasets. 
+
+Refer to variable names in your prompt will be most effecient. But copilot can probably figure out the variable names from the head of the data if they are sensible. 
+
+Always check for mistakes. 
 
 ## Exploring correlations in the data 
 
@@ -370,9 +398,6 @@ Finally, you can save the image:
 ```{r eval=FALSE}
 ggsave("outputs/plot1.png", gall, width = 8, height = 3)
 ```
-# Interlude: genAI and github copilot
-
-We'll take a quick break from the course to look at how genAI can help us with making plots. Chris will demonstrate the github copilot tool. 
 
 # 3. Spatial data and making maps
 
@@ -396,9 +421,18 @@ land <- st_read("data-cleaned/land.gpkg")
 logponds <- st_read("data-cleaned/logponds.gpkg")
 #Read sdat from a geopackage
 sdat <- st_read("data-cleaned/spatial-fish-coral-cover-sites.gpkg")
-```
+```  
 
 The `sf` package provides a simple and consistent interface for handling spatial data in R. It allows you to read, write, and manipulate spatial objects, making it easier to work with spatial data in your analyses.
+
+## How to use copilot to summarize spatial data
+
+You can ask copilot to make summaries then return those summaries to itself. Use 'agent' mode to do this. Then get it to document what it finds in the `readme.md` file. 
+
+For example: 
+
+"Read land.gpkg and logponds.gpkg, create summaries using head() and st_crs in this file. that you can look at. Then document the file paths and  meta-data in readme.md"
+
 
 ## The tmap package
 
@@ -602,6 +636,36 @@ geom_vline(xintercept = 0, linetype = "dashed") +
   plot_annotation(tag_levels = "A")
 
 ```
+## Choosing a model with copilot  
+
+Copilot can give valid statistical advice, but it can also give bad advice. Here are some tips on prompting:   
+
+
+Poor prompt: "What test can I use to test the relationship between pres.topa and CB_cover_percent?"
+
+What this prompt does right is tell copilot the variable names. However, it will likely make several suggestions for tests, some of which will be better than others. 
+
+A better outcome would be to attach the head() of the data to the question. Then it has some context about the data. You should also give more context:
+
+Better: "What test can I use to test the relationship between pres.topa and CB_cover_percent? pres.topa is counts of fish abundance at 50 different sites. At each site a survey with standard area was conducted. CB_cover_percent is the cover of branching coral at those sites, also from surveys with standardized area."
+
+Another approach is to ask the short question, but also attach you readme.md (if you have put all this contextual information in the readme). 
+
+The absoluate best would be to prompt it to provide advice on model verification. If you know what these tests are already, then say that. If you do not know, you could ask:
+
+Better: "What test can I use to test the relationship between pres.topa and CB_cover_percent? pres.topa is counts of fish abundance at 50 different sites. At each site a survey with standard area was conducted. CB_cover_percent is the cover of branching coral at those sites, also from surveys with standardized area.
+Make sure your answers follow statistical best practice. Be sure to include appropriate model verification tests. 
+"
+
+You could then follow-up with: 
+
+"Take a deep breath and think about your response above. Then evaluate the quality of this advice"
+
+Or 
+
+"I'm really paranoid about finding significant results that are not real. You'll get fired if this turns out to be bad advice. Are you sure this is most robust way to do this analysis?"
+
+
 
 ## Modelling Topa counts with a gaussian GLM
 
@@ -795,9 +859,17 @@ The model with the lowest AIC is the best.
 
 [More detail on the theory here.](https://www.seascapemodels.org/rstats/2018/04/13/how-to-use-the-AIC.html)
 
-# Interlude: genAI and github copilot part 2 
+# Interlude: copilot agents 
 
-We'll take a quick break from the course to look at how genAI can help us with ecological statistics. In particular, Chris wlil show how to use it to get robust statistical advice. You need to be a bit careful what you ask it. Good questions will get you good advice. Vague or poorly worded questions will get you inconsistent advice that may sometimes be wrong. 
+Github copilot are increasing adding tools. These tools let the chat model do things. One such tool is a websearch tool. This lets the model search the web for information.
+
+You need to install the 'websearch for copilot' in VS code, then get an API key with Tavily (free) or Bing (paid). Then once enabled copilot can help with websearches. Though TBH its often faster to do the websearch yourself. 
+
+For example:
+
+"use websearch to find some packages for modelling zero inflated count data" 
+
+Then you could keep iterating prompts to get it to find specific advice on code or statistics. 
 
 # 6. Comparing predictive power of habitat variables
 
